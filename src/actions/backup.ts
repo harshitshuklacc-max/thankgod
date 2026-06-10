@@ -143,15 +143,18 @@ export async function restoreBackup(backupId: string): Promise<ActionResult> {
 
     const supabase = createAdminClient();
 
-    const { data: backupRecord, error: fetchError } = await supabase
+    const { data, error: fetchError } = await supabase
       .from("backups")
       .select("*")
       .eq("id", backupId)
       .single();
 
-    if (fetchError || !backupRecord) {
+    if (fetchError || !data) {
       return { success: false, error: fetchError?.message || "Backup not found" };
     }
+
+    // Cast the returned record to our explicit BackupRecord interface
+    const backupRecord = data as unknown as BackupRecord;
 
     const filePath =
       backupRecord.file_url.split("/api/files/backups/")[1] ??
