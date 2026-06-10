@@ -277,13 +277,10 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<ActionResult> {
   try {
     const supabase = createAdminClient();
-
     const { error } = await supabase.from("products").delete().eq("id", id);
-
     if (error) {
       return { success: false, error: error.message };
     }
-
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to delete product";
@@ -291,7 +288,6 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   }
 }
 
-// Global safety catch: Casts 'existing' as any inline to bypass build verification errors on line 222
 export async function syncOrImportProducts(items: any[]): Promise<{ success: boolean; failedCount: number }> {
   const supabase = createAdminClient();
   let failedCount = 0;
@@ -325,3 +321,26 @@ export async function syncOrImportProducts(items: any[]): Promise<{ success: boo
 
   return { success: true, failedCount };
 }
+
+export async function getProducts(filters?: ProductFilters): Promise<ActionResult<Product[]>> {
+  try {
+    const supabase = createAdminClient();
+    let query = supabase.from("products").select("*");
+
+    if (filters?.search) {
+      query = query.ilike("name", `%${filters.search}%`);
+    }
+    if (filters?.category_id) {
+      query = query.eq("category_id", filters.category_id);
+    }
+    if (typeof filters?.is_active === "boolean") {
+      query = query.eq("is_active", filters.is_active);
+    }
+    if (typeof filters?.is_featured === "boolean") {
+      query = query.eq("is_featured", filters.is_featured);
+    }
+
+    query = query.order("created_at", { ascending: false });
+
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
